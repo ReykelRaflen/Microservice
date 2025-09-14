@@ -13,10 +13,10 @@
 
     <!-- Ganti sesuai nama service -->
     <groupId>com.reykel</groupId>
-    <artifactId>pelangganservice</artifactId>
+    <artifactId>bukuservice</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>pelangganservice</name>
-    <description>Microservice Pelanggan</description>
+    <name>bukuservice</name>
+    <description>Microservice Buku</description>
 
     <properties>
         <java.version>17</java.version>
