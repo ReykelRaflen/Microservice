@@ -5,6 +5,7 @@ import com.reykel.peminjamanservice.repository.PeminjamanRepository;
 import com.reykel.peminjamanservice.vo.Anggota;
 import com.reykel.peminjamanservice.vo.Buku;
 import com.reykel.peminjamanservice.vo.ResponseTemplate;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -26,13 +27,26 @@ public class PeminjamanService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    // === Konstanta RabbitMQ ===
+    private static final String EXCHANGE = "peminjamanExchange";
+    private static final String ROUTING_KEY = "peminjamanRoutingKey";
+
     // ===== CRUD Lokal =====
     public List<Peminjaman> getAll() {
         return repo.findAll();
     }
 
     public Peminjaman save(Peminjaman peminjaman) {
-        return repo.save(peminjaman);
+        Peminjaman saved = repo.save(peminjaman);
+
+        // === Publish ke RabbitMQ ===
+        rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, saved);
+        System.out.println("📤 Event Peminjaman dikirim ke RabbitMQ: " + saved);
+
+        return saved;
     }
 
     public Optional<Peminjaman> getById(Long id) {

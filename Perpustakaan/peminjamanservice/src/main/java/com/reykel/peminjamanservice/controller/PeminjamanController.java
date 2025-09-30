@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.reykel.peminjamanservice.model.Peminjaman;
 import com.reykel.peminjamanservice.service.PeminjamanService;
+import com.reykel.peminjamanservice.service.EmailService; // 🔔 import EmailService
 import com.reykel.peminjamanservice.vo.ResponseTemplate;
 
 @RestController
@@ -17,19 +18,38 @@ public class PeminjamanController {
     @Autowired
     private PeminjamanService service;
 
+    @Autowired
+    private EmailService emailService; // 🔔 untuk notifikasi email
+
     // 🔹 Ambil semua peminjaman
     @GetMapping
     public List<Peminjaman> getAll() {
         return service.getAll();
     }
 
-    // 🔹 Simpan peminjaman baru
-    @PostMapping
-    public Peminjaman save(@RequestBody Peminjaman peminjaman) {
-        return service.save(peminjaman);
+    // 🔹 Simpan peminjaman baru + kirim notifikasi email
+   @PostMapping
+public Peminjaman save(@RequestBody Peminjaman peminjaman) {
+    Peminjaman saved = service.save(peminjaman);
+
+    String subject = "Notifikasi Peminjaman Buku";
+    String message = "Halo, " + saved.getNamaPeminjam() +
+                     "\n\nAnda baru saja meminjam buku: " + saved.getNamaBuku() +
+                     "\nTanggal Peminjaman: " + saved.getTanggalPinjam() +
+                     "\n\nHarap dikembalikan tepat waktu. Terima kasih.";
+
+    // 🔹 Gunakan email dari Peminjaman agar tidak null
+    if (saved.getEmailPeminjam() != null && !saved.getEmailPeminjam().isBlank()) {
+        emailService.sendEmail(saved.getEmailPeminjam(), subject, message);
+    } else {
+        System.err.println("❌ Email peminjam kosong, tidak kirim notifikasi.");
     }
 
-    // 🔹 Ambil peminjaman by ID (hanya entity Peminjaman)
+    return saved;
+}
+
+
+    // 🔹 Ambil peminjaman by ID
     @GetMapping("/{id}")
     public ResponseEntity<Peminjaman> getById(@PathVariable Long id) {
         return service.getById(id)

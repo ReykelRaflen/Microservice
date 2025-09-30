@@ -6,16 +6,18 @@ public class Anggota {
     private String nama;
     private String alamat;
     private String jenisKelamin;
+    private String email;
 
     public Anggota() {
     }
 
-    public Anggota(Long id, String nim, String nama, String alamat, String jenisKelamin) {
+    public Anggota(Long id, String nim, String nama, String alamat, String jenisKelamin, String email) {
         this.id = id;
         this.nim = nim;
         this.nama = nama;
         this.alamat = alamat;
         this.jenisKelamin = jenisKelamin;
+        this.email = email;
     }
 
     public Long getId() {
@@ -58,9 +60,23 @@ public class Anggota {
         this.jenisKelamin = jenisKelamin;
     }
 
+    public String getEmail() {   // ✅ getter email
+        return email;
+    }
+
+    public void setEmail(String email) {   // ✅ setter email
+        this.email = email;
+    }
+
     @Override
     public String toString() {
-        // TODO Auto-generated method stub
-        return super.toString();
+        return "Anggota{" +
+                "id=" + id +
+                ", nim='" + nim + '\'' +
+                ", nama='" + nama + '\'' +
+                ", alamat='" + alamat + '\'' +
+                ", jenisKelamin='" + jenisKelamin + '\'' +
+                ", email='" + email + '\'' +
+                '}';
     }
 }

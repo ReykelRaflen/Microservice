@@ -24,5 +24,10 @@ public class Peminjaman {
     private Long anggotaId;
     private Long bukuId;
 
-    // Getter & Setter
+    // tambahan langsung di entity
+    private String namaPeminjam;
+    private String emailPeminjam;
+    private String namaBuku;
+
+    // Getter & Setter (atau pakai Lombok @Data)
 }

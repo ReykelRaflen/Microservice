@@ -12,7 +12,7 @@
     </parent>
 
     <!-- Ganti sesuai nama service -->
-    <groupId>com.reykel</groupId>
+    <groupId>com.sarah</groupId>
     <artifactId>peminjamanservice</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>peminjamanservice</name>
@@ -66,6 +66,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+    <groupId>com.fasterxml.jackson.datatype</groupId>
+    <artifactId>jackson-datatype-jsr310</artifactId>
+</dependency>
+
     </dependencies>
 
     <!-- Import Spring Cloud BOM -->
