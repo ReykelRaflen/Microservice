@@ -1,14 +1,13 @@
 package com.sarah.pengembalianservice.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.ServiceInstance;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
 import com.sarah.pengembalianservice.model.Pengembalian;
 import com.sarah.pengembalianservice.repository.PengembalianRepository;
-import com.sarah.pengembalianservice.vo.*;
+import com.sarah.pengembalianservice.vo.Peminjaman;
+import com.sarah.pengembalianservice.vo.ResponseTemplate;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -18,88 +17,69 @@ import java.util.Optional;
 public class PengembalianService {
 
     @Autowired
-    private PengembalianRepository repo;
-
-    @Autowired
-    private DiscoveryClient discoveryClient;
+    private PengembalianRepository pengembalianRepository;
 
     @Autowired
     private RestTemplate restTemplate;
 
-    // ===== CRUD Lokal =====
-    public List<Pengembalian> getAll() {
-        return repo.findAll();
-    }
+    // ✅ Simpan + hitung denda
+    public Pengembalian simpanPengembalian(Pengembalian pengembalian) {
+        Pengembalian saved = pengembalianRepository.save(pengembalian);
 
-    public Optional<Pengembalian> getById(Long id) {
-        return repo.findById(id);
-    }
+        String url = "http://localhost:9010/api/peminjaman/" + pengembalian.getPeminjamanId();
+        Peminjaman peminjaman = restTemplate.getForObject(url, Peminjaman.class);
 
-    public void delete(Long id) {
-        repo.deleteById(id);
-    }
-
-    // ===== Simpan + hitung keterlambatan & denda =====
-    public Pengembalian save(Pengembalian pengembalian) {
-        // Ambil data peminjaman dari microservice
-        ServiceInstance peminjamanInstance = discoveryClient.getInstances("PEMINJAMAN-SERVICE").get(0);
-        Peminjaman peminjaman = restTemplate.getForObject(
-                peminjamanInstance.getUri() + "/api/peminjaman/" + pengembalian.getPeminjamanId(),
-                Peminjaman.class
-        );
-
-        // Hitung keterlambatan & denda
-        if (pengembalian.getTanggalDikembalikan() != null && peminjaman.getTanggalKembali() != null) {
-            long selisihHari = ChronoUnit.DAYS.between(
+        if (peminjaman != null && peminjaman.getTanggalKembali() != null) {
+            long terlambat = ChronoUnit.DAYS.between(
                     peminjaman.getTanggalKembali(),
-                    pengembalian.getTanggalDikembalikan()
-            );
-            if (selisihHari > 0) {
-                pengembalian.setTerlambat((int) selisihHari);
-                pengembalian.setDenda(selisihHari * 2000L); // 2000 per hari
+                    pengembalian.getTanggalDikembalikan());
+
+            if (terlambat > 0) {
+                saved.setTerlambat((int) terlambat);
+                saved.setDenda(terlambat * 2000);
             } else {
-                pengembalian.setTerlambat(0);
-                pengembalian.setDenda(0L);
+                saved.setTerlambat(0);
+                saved.setDenda(0);
             }
+
+            pengembalianRepository.save(saved);
         }
 
-        return repo.save(pengembalian);
+        return saved;
     }
 
-    // ===== Integrasi ke microservices lain =====
+    // ✅ Get all
+    public List<Pengembalian> getAll() {
+        return pengembalianRepository.findAll();
+    }
+
+    // ✅ Get by ID
+    public Pengembalian getById(Long id) {
+        return pengembalianRepository.findById(id).orElse(null);
+    }
+
+    // ✅ Delete
+    public void delete(Long id) {
+        pengembalianRepository.deleteById(id);
+    }
+
+    // ✅ Detail dengan join Peminjaman (bisa kamu lengkapi lagi dengan Anggota &
+    // Buku)
     public ResponseTemplate getPengembalianWithDetail(Long id) {
-        Pengembalian pengembalian = repo.findById(id).orElse(null);
-        if (pengembalian == null) return null;
+        Optional<Pengembalian> pengembalianOpt = pengembalianRepository.findById(id);
+        if (pengembalianOpt.isEmpty()) {
+            return null;
+        }
 
-        // 🔹 Cari instance PEMINJAMAN-SERVICE
-        ServiceInstance peminjamanInstance = discoveryClient.getInstances("PEMINJAMAN-SERVICE").get(0);
-        Peminjaman peminjaman = restTemplate.getForObject(
-                peminjamanInstance.getUri() + "/api/peminjaman/" + pengembalian.getPeminjamanId(),
-                Peminjaman.class
-        );
+        Pengembalian pengembalian = pengembalianOpt.get();
 
-        // 🔹 Cari instance ANGGOTA-SERVICE
-        ServiceInstance anggotaInstance = discoveryClient.getInstances("ANGGOTA-SERVICE").get(0);
-        Anggota anggota = restTemplate.getForObject(
-                anggotaInstance.getUri() + "/api/anggota/" + peminjaman.getAnggotaId(),
-                Anggota.class
-        );
+        String url = "http://localhost:9010/api/peminjaman/" + pengembalian.getPeminjamanId();
+        Peminjaman peminjaman = restTemplate.getForObject(url, Peminjaman.class);
 
-        // 🔹 Cari instance BUKU-SERVICE
-        ServiceInstance bukuInstance = discoveryClient.getInstances("BUKU-SERVICE").get(0);
-        Buku buku = restTemplate.getForObject(
-                bukuInstance.getUri() + "/api/buku/" + peminjaman.getBukuId(),
-                Buku.class
-        );
+        ResponseTemplate response = new ResponseTemplate();
+        response.setPengembalian(pengembalian);
+        response.setPeminjaman(peminjaman);
 
-        // Gabungkan hasil
-        ResponseTemplate vo = new ResponseTemplate();
-        vo.setPengembalian(pengembalian);
-        vo.setPeminjaman(peminjaman);
-        vo.setAnggota(anggota);
-        vo.setBuku(buku);
-        vo.setDenda(pengembalian.getDenda() != null ? pengembalian.getDenda() : 0L);
-
-        return vo;
+        return response;
     }
 }

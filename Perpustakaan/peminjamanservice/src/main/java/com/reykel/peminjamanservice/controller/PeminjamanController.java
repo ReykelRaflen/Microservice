@@ -8,18 +8,18 @@ import org.springframework.web.bind.annotation.*;
 
 import com.reykel.peminjamanservice.model.Peminjaman;
 import com.reykel.peminjamanservice.service.PeminjamanService;
-import com.reykel.peminjamanservice.service.EmailService; // 🔔 import EmailService
+import com.reykel.peminjamanservice.service.EmailService;
 import com.reykel.peminjamanservice.vo.ResponseTemplate;
 
 @RestController
-@RequestMapping("api/peminjaman")
+@RequestMapping("/api/peminjaman")
 public class PeminjamanController {
 
     @Autowired
     private PeminjamanService service;
 
     @Autowired
-    private EmailService emailService; // 🔔 untuk notifikasi email
+    private EmailService emailService;
 
     // 🔹 Ambil semua peminjaman
     @GetMapping
@@ -27,27 +27,26 @@ public class PeminjamanController {
         return service.getAll();
     }
 
-    // 🔹 Simpan peminjaman baru + kirim notifikasi email
-   @PostMapping
-public Peminjaman save(@RequestBody Peminjaman peminjaman) {
-    Peminjaman saved = service.save(peminjaman);
+    // 🔹 Simpan peminjaman baru + kirim notifikasi email + publish event
+    @PostMapping
+    public Peminjaman save(@RequestBody Peminjaman peminjaman) {
+        Peminjaman saved = service.save(peminjaman);
 
-    String subject = "Notifikasi Peminjaman Buku";
-    String message = "Halo, " + saved.getNamaPeminjam() +
-                     "\n\nAnda baru saja meminjam buku: " + saved.getNamaBuku() +
-                     "\nTanggal Peminjaman: " + saved.getTanggalPinjam() +
-                     "\n\nHarap dikembalikan tepat waktu. Terima kasih.";
+        // 🔹 Notifikasi email
+        if (saved.getEmailPeminjam() != null && !saved.getEmailPeminjam().isBlank()) {
+            String subject = "Notifikasi Peminjaman Buku";
+            String message = "Halo, " + saved.getNamaPeminjam() +
+                             "\n\nAnda baru saja meminjam buku: " + saved.getNamaBuku() +
+                             "\nTanggal Peminjaman: " + saved.getTanggalPinjam() +
+                             "\n\nHarap dikembalikan tepat waktu. Terima kasih.";
+            emailService.sendEmail(saved.getEmailPeminjam(), subject, message);
+        } else {
+            System.err.println("❌ Email peminjam kosong, tidak kirim notifikasi.");
+        }
 
-    // 🔹 Gunakan email dari Peminjaman agar tidak null
-    if (saved.getEmailPeminjam() != null && !saved.getEmailPeminjam().isBlank()) {
-        emailService.sendEmail(saved.getEmailPeminjam(), subject, message);
-    } else {
-        System.err.println("❌ Email peminjam kosong, tidak kirim notifikasi.");
+        // 🔹 Event sudah dipublish dari service.save()
+        return saved;
     }
-
-    return saved;
-}
-
 
     // 🔹 Ambil peminjaman by ID
     @GetMapping("/{id}")
@@ -57,7 +56,7 @@ public Peminjaman save(@RequestBody Peminjaman peminjaman) {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // 🔹 Hapus peminjaman
+    // 🔹 Hapus peminjaman (hapus dari H2 + MongoDB)
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);

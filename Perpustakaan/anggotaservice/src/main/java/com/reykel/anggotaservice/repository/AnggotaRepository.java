@@ -1,10 +1,7 @@
 package com.reykel.anggotaservice.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
 import com.reykel.anggotaservice.model.Anggota;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-@Repository
 public interface AnggotaRepository extends JpaRepository<Anggota, Long> {
 }

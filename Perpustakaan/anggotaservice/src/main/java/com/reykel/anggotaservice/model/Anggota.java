@@ -1,5 +1,6 @@
 package com.reykel.anggotaservice.model;
 
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Entity
 public class Anggota {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,5 +23,4 @@ public class Anggota {
     private String nama;
     private String alamat;
     private String jenisKelamin;
-
 }

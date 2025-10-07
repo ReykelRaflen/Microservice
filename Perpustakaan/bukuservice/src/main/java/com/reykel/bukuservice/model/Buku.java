@@ -1,26 +1,21 @@
 package com.reykel.bukuservice.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@Table(name = "buku")
 public class Buku {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-        private String judul;
-        private String pengarang;
-        private String penerbit;
-        private Integer tahunTerbit;
-
-    // Getter & Setter
+    private String judul;
+    private String pengarang;
+    private String penerbit;
+    private int tahunTerbit;
 }

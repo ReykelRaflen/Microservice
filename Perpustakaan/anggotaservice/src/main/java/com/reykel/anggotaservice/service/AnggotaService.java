@@ -1,13 +1,12 @@
 package com.reykel.anggotaservice.service;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.reykel.anggotaservice.model.Anggota;
+import com.reykel.anggotaservice.repository.AnggotaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.reykel.anggotaservice.model.Anggota;
-import com.reykel.anggotaservice.repository.AnggotaRepository;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AnggotaService {
@@ -15,6 +14,7 @@ public class AnggotaService {
     @Autowired
     private AnggotaRepository repo;
 
+    // ===== CRUD =====
     public List<Anggota> getAll() {
         return repo.findAll();
     }

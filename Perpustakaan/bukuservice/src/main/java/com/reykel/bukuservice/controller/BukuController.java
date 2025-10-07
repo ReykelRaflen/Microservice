@@ -1,47 +1,23 @@
 package com.reykel.bukuservice.controller;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.reykel.bukuservice.model.Buku;
 import com.reykel.bukuservice.service.BukuService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("api/buku")
+@RequestMapping("/api/buku")
 public class BukuController {
 
-    @Autowired
-    private BukuService service;
+    private final BukuService bukuService;
 
-    @GetMapping
-    public List<Buku> getAll() {
-        return service.getAll();
+    public BukuController(BukuService bukuService) {
+        this.bukuService = bukuService;
     }
 
     @PostMapping
-    public Buku save(@RequestBody Buku buku) {
-        return service.save(buku);
-    }
-
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Buku> getById(@PathVariable Long id) {
-        return service.getById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<Buku> create(@RequestBody Buku buku) {
+        Buku saved = bukuService.create(buku);
+        return ResponseEntity.ok(saved);
     }
 }

@@ -1,33 +1,40 @@
 package com.reykel.bukuservice.service;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
+import com.reykel.bukuservice.config.RabbitConfig;
+import com.reykel.bukuservice.model.BukuReadModel;
 import com.reykel.bukuservice.model.Buku;
 import com.reykel.bukuservice.repository.BukuRepository;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.stereotype.Service;
 
 @Service
 public class BukuService {
 
-    @Autowired
-    private BukuRepository repo;
+    private final BukuRepository bukuRepository;
+    private final RabbitTemplate rabbitTemplate;
 
-    public List<Buku> getAll() {
-        return repo.findAll();
+    public BukuService(BukuRepository bukuRepository, RabbitTemplate rabbitTemplate) {
+        this.bukuRepository = bukuRepository;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
-    public Buku save(Buku buku) {
-        return repo.save(buku);
-    }
+    public Buku create(Buku buku) {
+        Buku saved = bukuRepository.save(buku);
 
-    public Optional<Buku> getById(Long id) {
-        return repo.findById(id);
-    }
+        // mapping ke read model
+      BukuReadModel readModel = new BukuReadModel(
+        saved.getId(),
+        saved.getId(), // ini bisa dijadikan bukuId juga
+        saved.getJudul(),
+        saved.getPengarang(),
+        saved.getPenerbit(),
+        saved.getTahunTerbit()
+);
 
-    public void delete(Long id) {
-        repo.deleteById(id);
+
+        // kirim ke RabbitMQ
+        rabbitTemplate.convertAndSend(RabbitConfig.BUKU_QUEUE, readModel);
+
+        return saved;
     }
 }

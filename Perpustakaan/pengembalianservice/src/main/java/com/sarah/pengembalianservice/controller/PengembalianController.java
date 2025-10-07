@@ -1,7 +1,10 @@
 package com.sarah.pengembalianservice.controller;
 
+import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +15,7 @@ import com.sarah.pengembalianservice.vo.ResponseTemplate;
 
 @RestController
 @RequestMapping("/api/pengembalian")
+@CrossOrigin(origins = "*") // biar bisa diakses dari frontend (Vue/React/Angular dsb)
 public class PengembalianController {
 
     @Autowired
@@ -19,37 +23,45 @@ public class PengembalianController {
 
     // 🔹 Get all pengembalian
     @GetMapping
-    public List<Pengembalian> getAll() {
-        return service.getAll();
+    public ResponseEntity<List<Pengembalian>> getAll() {
+        List<Pengembalian> list = service.getAll();
+        return list.isEmpty()
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(list);
     }
 
-    // 🔹 Save pengembalian baru
+    // 🔹 Save pengembalian baru (POST) -> langsung hitung denda
     @PostMapping
-    public Pengembalian save(@RequestBody Pengembalian pengembalian) {
-        return service.save(pengembalian);
+    public ResponseEntity<Pengembalian> save(@Valid @RequestBody Pengembalian pengembalian) {
+        Pengembalian saved = service.simpanPengembalian(pengembalian); // ✅ pakai logika hitung denda
+        return ResponseEntity
+                .created(URI.create("/api/pengembalian/" + saved.getId()))
+                .body(saved);
     }
 
-    // 🔹 Get pengembalian by ID (hanya data pengembalian)
-    @GetMapping("/{id}")
-    public ResponseEntity<Pengembalian> getById(@PathVariable Long id) {
-        return service.getById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+    // 🔹 Get pengembalian by ID
+   @GetMapping("/{id}")
+public ResponseEntity<Pengembalian> getById(@PathVariable Long id) {
+    Pengembalian pengembalian = service.getById(id);
+    return pengembalian != null
+            ? ResponseEntity.ok(pengembalian)
+            : ResponseEntity.notFound().build();
+}
+
 
     // 🔹 Delete pengembalian
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
+        return ResponseEntity.noContent().build();
     }
 
-    // 🔹 Get pengembalian detail (dengan peminjaman, anggota, buku)
+    // 🔹 Get pengembalian detail (dengan data peminjaman, anggota, buku)
     @GetMapping("/{id}/detail")
     public ResponseEntity<ResponseTemplate> getPengembalianWithDetail(@PathVariable Long id) {
         ResponseTemplate response = service.getPengembalianWithDetail(id);
-        if (response == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(response);
+        return response == null
+                ? ResponseEntity.notFound().build()
+                : ResponseEntity.ok(response);
     }
 }
